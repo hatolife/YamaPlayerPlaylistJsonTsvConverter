@@ -84,12 +84,12 @@ playlist_name\tplaylist_active\tyoutube_list_id\tplaylist_is_edit\ttrack_mode\tt
 
 - URL 正規化が発生
 - URL 形式外（`http://`/`https://` で始まらない）
-- 旧不整合TSVの先頭 `playlist_index` 列を無視した場合
 
 許容:
 
 - 空文字
 - `Tracks` 0件 playlist
+- 7列を超える余剰列は無視
 
 ## 6. 文字列正規化
 

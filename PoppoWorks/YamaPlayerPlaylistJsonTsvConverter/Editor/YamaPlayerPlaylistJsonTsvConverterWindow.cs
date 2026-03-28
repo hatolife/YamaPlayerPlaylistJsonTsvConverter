@@ -971,23 +971,6 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
         ConversionReport report)
     {
         string[] rawCells = rawLine.Split('\t');
-        if (rawCells.Length == ExpectedHeader.Length + 1)
-        {
-            int legacyPlaylistIndex;
-            if (int.TryParse(rawCells[0], out legacyPlaylistIndex))
-            {
-                // Backward compatibility for legacy rows that still contain playlist_index.
-                string[] shifted = new string[ExpectedHeader.Length];
-                Array.Copy(rawCells, 1, shifted, 0, ExpectedHeader.Length);
-                rawCells = shifted;
-                report.Warnings.Add(
-                    string.Format(
-                        "Line {0}: legacy playlist_index column detected and ignored ({1}).",
-                        lineNumber,
-                        legacyPlaylistIndex));
-            }
-        }
-
         string[] cells = NormalizeColumns(rawCells);
         if (cells.Length < ExpectedHeader.Length)
         {
@@ -1086,19 +1069,10 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
         if (rawCells.Length > ExpectedHeader.Length)
         {
             string[] fixedCells = new string[ExpectedHeader.Length];
-            for (int i = 0; i < ExpectedHeader.Length - 1; i++)
+            for (int i = 0; i < ExpectedHeader.Length; i++)
             {
                 fixedCells[i] = rawCells[i];
             }
-
-            // When tabs leak into URL text, join tail parts by removing tab separators.
-            StringBuilder tail = new StringBuilder();
-            for (int i = ExpectedHeader.Length - 1; i < rawCells.Length; i++)
-            {
-                tail.Append(rawCells[i]);
-            }
-
-            fixedCells[ExpectedHeader.Length - 1] = tail.ToString();
             return fixedCells;
         }
 

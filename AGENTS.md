@@ -38,10 +38,6 @@
   - `InstallWinMergeViaWinget()`
   - `FindWinMergeExecutable()`
 
-## 既知の互換処理
-
-- 旧不整合TSV（先頭に旧 `playlist_index` が残る行）を検出した場合、先頭列を無視して読み込み、Result に警告を出す。
-
 ## 運用メモ
 
 - エラー/警告判定は Result を参照

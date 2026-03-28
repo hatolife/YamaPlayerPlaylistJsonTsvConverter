@@ -2,13 +2,12 @@
 
 YamaPlayer のプレイリスト JSON と TSV を相互変換する Unity Editor ツールです。
 
-## このツールの利点
+## このツールで得られること
 
-- YamaPlayer 本体にも JSON の出力機能はありますが、そのままでは「見やすい・編集しやすい」形式とは言いにくいです。
-- 本ツールで TSV 化することで、プレイリストをテキストベースかつ表形式で管理できます。
-- TSV なら Googleスプレッドシートや Excel で、一覧編集・検索・並び替え・フィルタがしやすくなります。
-- JSON/TSV の相互変換により、編集は表計算ソフト、反映は JSON という運用に分離できます。
-- 出力 JSON の差分確認機能により、意図した変更かどうかを確認しやすくなります。
+- プレイリストを TSV（表形式）で扱えるため、内容の把握と一括編集がしやすくなります。
+- Googleスプレッドシート / Excel で、検索・並び替え・フィルタを使ったメンテナンスができます。
+- 編集作業（TSV）と反映データ（JSON）を分離でき、運用手順を整理しやすくなります。
+- `Input JSON` と `Output JSON` の差分を確認できるため、変更内容の妥当性を検証しやすくなります。
 
 ## 機能
 
@@ -49,10 +48,6 @@ playlist_name\tplaylist_active\tyoutube_list_id\tplaylist_is_edit\ttrack_mode\tt
 - URL 形式外は警告で許容
 - URL は不要文字（空白・tab・改行・制御文字）を削除して正規化
 
-## 既知の互換処理
-
-- 旧不整合TSV（ヘッダ7列なのにデータ先頭に旧 `playlist_index` が残る8列）を読み込んだ場合、先頭列を自動で無視します。
-
 ## 使い方（基本）
 
 1. `Input JSON` を選択
@@ -64,3 +59,4 @@ playlist_name\tplaylist_active\tyoutube_list_id\tplaylist_is_edit\ttrack_mode\tt
 
 - 実行結果は `Result` の内容を優先して確認してください。
 - 差分詳細は最大 200 件まで表示します。
+- `WinMerge` での確認を推奨します。
