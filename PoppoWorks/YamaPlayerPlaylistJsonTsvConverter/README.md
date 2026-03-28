@@ -29,6 +29,7 @@ YamaPlayer のプレイリスト JSON と TSV を相互変換する Unity Editor
   - `Input +1` ボタンで連番を自動設定
     - 例: `playlists_1.json -> playlists_2.json`
     - 末尾連番なしは `_1` を付与
+  - `Output JSON` が空欄の状態で `Input JSON` を選択した場合も、同じ連番ルールで自動設定
 
 ## TSV 形式
 

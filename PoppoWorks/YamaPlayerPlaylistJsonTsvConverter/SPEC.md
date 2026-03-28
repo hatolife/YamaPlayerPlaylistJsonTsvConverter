@@ -110,6 +110,8 @@ playlist_name\tplaylist_active\tyoutube_list_id\tplaylist_is_edit\ttrack_mode\tt
   - `Output JSON: Input +1`
   - `Diff with WinMerge` (Windows)
   - `Install WinMerge (winget)` (Windows)
+- 自動補完
+  - `Output JSON` が空欄の状態で `Input JSON` を選択した場合、`Input +1` と同じ連番ルール（末尾番号を +1 / 番号なしは `_1`）で自動設定する
 
 ## 8. 差分表示
 
