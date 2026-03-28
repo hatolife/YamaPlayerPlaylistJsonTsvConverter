@@ -291,9 +291,7 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
 
             if (string.IsNullOrEmpty(_outputJsonPath))
             {
-                _outputJsonPath = NormalizeOutputJsonPath(Path.Combine(
-                    Path.GetDirectoryName(_inputJsonPath) ?? Application.dataPath,
-                    Path.GetFileNameWithoutExtension(_inputJsonPath) + ".converted.json"));
+                SetOutputJsonPathByInputIncrement();
             }
         }
     }
