@@ -788,7 +788,7 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
     private static string BuildTsv(PlaylistRoot root, ConversionReport report)
     {
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine(string.Join("\t", ExpectedHeader));
+        sb.AppendLine(string.Join("\t", EscapeTsvCells(ExpectedHeader)));
 
         int rowCount = 0;
         int totalRows = 0;
@@ -820,7 +820,7 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
                     string.Empty,
                 };
 
-                sb.AppendLine(string.Join("\t", zeroTrackRow));
+                sb.AppendLine(string.Join("\t", EscapeTsvCells(zeroTrackRow)));
                 rowCount++;
                 processedRows++;
                 UpdateCancelableProgress("JSON -> TSV", "Exporting playlists...", processedRows, totalRows);
@@ -864,7 +864,7 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
                     urlResult.Value,
                 };
 
-                sb.AppendLine(string.Join("\t", row));
+                sb.AppendLine(string.Join("\t", EscapeTsvCells(row)));
                 rowCount++;
                 processedRows++;
                 if (processedRows % ProgressUpdateInterval == 0 || processedRows == totalRows)
@@ -909,7 +909,7 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
             return root;
         }
 
-        string[] headerCells = lines[headerLineIndex].Split('\t');
+        string[] headerCells = ParseTsvLine(lines[headerLineIndex]);
         if (!IsValidHeader(headerCells))
         {
             report.Errors.Add("TSV header mismatch. Expected fixed header order.");
@@ -970,7 +970,24 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
         ref PlaylistBuilder currentBuilder,
         ConversionReport report)
     {
-        string[] rawCells = rawLine.Split('\t');
+        string[] rawCells = ParseTsvLine(rawLine);
+        if (rawCells.Length == ExpectedHeader.Length + 1)
+        {
+            int legacyPlaylistIndex;
+            if (int.TryParse(rawCells[0], out legacyPlaylistIndex))
+            {
+                // Backward compatibility for legacy rows that still contain playlist_index.
+                string[] shifted = new string[ExpectedHeader.Length];
+                Array.Copy(rawCells, 1, shifted, 0, ExpectedHeader.Length);
+                rawCells = shifted;
+                report.Warnings.Add(
+                    string.Format(
+                        "Line {0}: legacy playlist_index column detected and ignored ({1}).",
+                        lineNumber,
+                        legacyPlaylistIndex));
+            }
+        }
+
         string[] cells = NormalizeColumns(rawCells);
         if (cells.Length < ExpectedHeader.Length)
         {
@@ -1069,10 +1086,19 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
         if (rawCells.Length > ExpectedHeader.Length)
         {
             string[] fixedCells = new string[ExpectedHeader.Length];
-            for (int i = 0; i < ExpectedHeader.Length; i++)
+            for (int i = 0; i < ExpectedHeader.Length - 1; i++)
             {
                 fixedCells[i] = rawCells[i];
             }
+
+            // When tabs leak into URL text, join tail parts by removing tab separators.
+            StringBuilder tail = new StringBuilder();
+            for (int i = ExpectedHeader.Length - 1; i < rawCells.Length; i++)
+            {
+                tail.Append(rawCells[i]);
+            }
+
+            fixedCells[ExpectedHeader.Length - 1] = tail.ToString();
             return fixedCells;
         }
 
@@ -1088,6 +1114,124 @@ public sealed class YamaPlayerPlaylistJsonTsvConverterWindow : EditorWindow
         }
 
         return padded;
+    }
+
+    private static string[] ParseTsvLine(string line)
+    {
+        if (line == null)
+        {
+            return new[] { string.Empty };
+        }
+
+        List<string> cells = new List<string>();
+        int index = 0;
+        while (index < line.Length)
+        {
+            if (line[index] == '"')
+            {
+                int j = index + 1;
+                StringBuilder quoted = new StringBuilder();
+                bool quotedOk = false;
+
+                while (j < line.Length)
+                {
+                    char c = line[j];
+                    if (c == '"')
+                    {
+                        if (j + 1 < line.Length && line[j + 1] == '"')
+                        {
+                            quoted.Append('"');
+                            j += 2;
+                            continue;
+                        }
+
+                        if (j + 1 == line.Length || line[j + 1] == '\t')
+                        {
+                            quotedOk = true;
+                        }
+
+                        break;
+                    }
+
+                    quoted.Append(c);
+                    j++;
+                }
+
+                if (quotedOk)
+                {
+                    cells.Add(quoted.ToString());
+                    if (j + 1 >= line.Length)
+                    {
+                        index = line.Length;
+                    }
+                    else
+                    {
+                        index = j + 2;
+                        if (index == line.Length)
+                        {
+                            cells.Add(string.Empty);
+                        }
+                    }
+
+                    continue;
+                }
+            }
+
+            int nextTab = line.IndexOf('\t', index);
+            if (nextTab < 0)
+            {
+                cells.Add(line.Substring(index));
+                index = line.Length;
+            }
+            else
+            {
+                cells.Add(line.Substring(index, nextTab - index));
+                index = nextTab + 1;
+                if (index == line.Length)
+                {
+                    cells.Add(string.Empty);
+                }
+            }
+        }
+
+        if (cells.Count == 0)
+        {
+            cells.Add(string.Empty);
+        }
+
+        return cells.ToArray();
+    }
+
+    private static string[] EscapeTsvCells(string[] cells)
+    {
+        string[] escaped = new string[cells.Length];
+        for (int i = 0; i < cells.Length; i++)
+        {
+            escaped[i] = EscapeTsvCell(cells[i]);
+        }
+
+        return escaped;
+    }
+
+    private static string EscapeTsvCell(string value)
+    {
+        if (value == null)
+        {
+            return string.Empty;
+        }
+
+        bool needsQuote = value.IndexOf('\t') >= 0
+                          || value.IndexOf('"') >= 0
+                          || value.IndexOf('\r') >= 0
+                          || value.IndexOf('\n') >= 0
+                          || (value.Length > 0 && (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[value.Length - 1])));
+
+        if (!needsQuote)
+        {
+            return value;
+        }
+
+        return "\"" + value.Replace("\"", "\"\"") + "\"";
     }
 
     private static bool IsValidHeader(string[] header)
